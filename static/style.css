@@ -739,3 +739,89 @@ footer a:hover { text-decoration: underline; }
   font-size: 12px;
   color: var(--subtext);
 }
+
+/* ========== VOICE SEARCH MODAL ========== */
+.voice-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+}
+.voice-modal.active { display: flex; }
+.voice-modal-content {
+  background: var(--panel-bg, #fff);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  padding: 48px 56px;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  min-width: 340px;
+}
+.voice-close {
+  position: absolute;
+  top: 16px; right: 20px;
+  font-size: 28px;
+  cursor: pointer;
+  color: var(--subtext);
+  line-height: 1;
+  transition: color 0.2s;
+}
+.voice-close:hover { color: var(--text); }
+.voice-title {
+  font-size: 24px;
+  font-family: 'Google Sans', Arial, sans-serif;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 32px;
+}
+.voice-rings {
+  position: relative;
+  width: 120px; height: 120px;
+  margin: 0 auto 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.voice-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid #4285f4;
+  opacity: 0;
+  animation: voice-pulse 2s ease-out infinite;
+}
+.voice-ring:nth-child(1) { width: 80px; height: 80px; animation-delay: 0s; }
+.voice-ring:nth-child(2) { width: 100px; height: 100px; animation-delay: 0.4s; }
+.voice-ring:nth-child(3) { width: 120px; height: 120px; animation-delay: 0.8s; }
+@keyframes voice-pulse {
+  0% { transform: scale(0.5); opacity: 0.8; }
+  100% { transform: scale(1.2); opacity: 0; }
+}
+.voice-mic-icon {
+  width: 56px; height: 56px;
+  background: linear-gradient(135deg, #4285f4, #ea4335);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 24px;
+  z-index: 1;
+  box-shadow: 0 4px 16px rgba(66,133,244,0.4);
+  animation: mic-glow 1.5s ease-in-out infinite alternate;
+}
+@keyframes mic-glow {
+  0% { box-shadow: 0 4px 16px rgba(66,133,244,0.4); }
+  100% { box-shadow: 0 4px 28px rgba(234,67,53,0.5); }
+}
+.voice-transcript {
+  font-size: 18px;
+  color: var(--subtext);
+  font-family: 'Google Sans', Arial, sans-serif;
+  min-height: 28px;
+}

@@ -386,3 +386,102 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
+
+// ====== VOICE SEARCH ======
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let voiceModal = null;
+
+function createVoiceModal() {
+  if (voiceModal) return voiceModal;
+  const modal = document.createElement('div');
+  modal.className = 'voice-modal';
+  modal.innerHTML = `
+    <div class="voice-modal-content">
+      <div class="voice-close" id="voiceClose">&times;</div>
+      <div class="voice-title">Listening...</div>
+      <div class="voice-rings">
+        <div class="voice-ring"></div>
+        <div class="voice-ring"></div>
+        <div class="voice-ring"></div>
+        <div class="voice-mic-icon"><i class="fa fa-microphone"></i></div>
+      </div>
+      <div class="voice-transcript" id="voiceTranscript">Speak now</div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  voiceModal = modal;
+  document.getElementById('voiceClose').addEventListener('click', stopVoice);
+  modal.addEventListener('click', (e) => { if (e.target === modal) stopVoice(); });
+  return modal;
+}
+
+let recognition = null;
+
+function startVoice() {
+  if (!SpeechRecognition) {
+    alert('Voice search is not supported in your browser. Try Chrome or Edge.');
+    return;
+  }
+
+  const modal = createVoiceModal();
+  modal.classList.add('active');
+  document.getElementById('voiceTranscript').textContent = 'Speak now';
+
+  recognition = new SpeechRecognition();
+  recognition.lang = 'en-US';
+  recognition.interimResults = true;
+  recognition.continuous = false;
+  recognition.maxAlternatives = 1;
+
+  recognition.onresult = (event) => {
+    let transcript = '';
+    for (let i = 0; i < event.results.length; i++) {
+      transcript += event.results[i][0].transcript;
+    }
+    document.getElementById('voiceTranscript').textContent = transcript;
+
+    if (event.results[0].isFinal) {
+      searchInput.value = transcript;
+      searchInputSmall.value = transcript;
+      setTimeout(() => {
+        stopVoice();
+        doSearch();
+      }, 400);
+    }
+  };
+
+  recognition.onerror = (event) => {
+    document.getElementById('voiceTranscript').textContent =
+      event.error === 'no-speech' ? 'No speech detected. Try again.' :
+      event.error === 'not-allowed' ? 'Microphone access denied.' :
+      'Error: ' + event.error;
+    setTimeout(stopVoice, 2000);
+  };
+
+  recognition.onend = () => {
+    // If modal still active but recognition ended without result
+    if (voiceModal && voiceModal.classList.contains('active')) {
+      setTimeout(stopVoice, 1500);
+    }
+  };
+
+  recognition.start();
+}
+
+function stopVoice() {
+  if (recognition) {
+    try { recognition.stop(); } catch(e) {}
+    recognition = null;
+  }
+  if (voiceModal) {
+    voiceModal.classList.remove('active');
+  }
+}
+
+// Attach to all mic buttons
+document.querySelectorAll('.mic-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    startVoice();
+  });
+});
