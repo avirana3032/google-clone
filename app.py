@@ -5,6 +5,7 @@ import requests
 from flask import Flask, render_template, request, jsonify
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
+from cachetools import cached, TTLCache
 
 load_dotenv()
 
@@ -32,6 +33,7 @@ def get_headers():
 
 
 # ─── DuckDuckGo HTML Search ────────────────────────────────────
+@cached(cache=TTLCache(maxsize=500, ttl=600))
 def search_duckduckgo(query: str, page: int = 1):
     """Scrape DuckDuckGo HTML results (no API key needed)."""
     results = []
@@ -110,6 +112,7 @@ def _extract_ddg_url(href: str) -> str:
 
 
 # ─── Bing Scrape (fallback) ────────────────────────────────────
+@cached(cache=TTLCache(maxsize=500, ttl=600))
 def search_bing(query: str, page: int = 1):
     """Fallback: scrape Bing HTML results."""
     results = []

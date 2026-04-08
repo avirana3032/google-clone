@@ -4,3 +4,4 @@ beautifulsoup4==4.12.2
 python-dotenv==1.0.0
 lxml==5.1.0
 gunicorn==21.2.0
+cachetools==5.3.3

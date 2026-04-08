@@ -173,11 +173,30 @@ async function doSearch(lucky = false) {
   window.scrollTo(0, 0);
 
   if (lucky) {
+    history.pushState({q, page: 1}, '', `/?q=${encodeURIComponent(q)}&lucky=1`);
     await fetchResults(q, 1, true);
   } else {
+    history.pushState({q, page: 1}, '', `/?q=${encodeURIComponent(q)}`);
     await fetchResults(q, 1);
   }
 }
+
+window.addEventListener('popstate', async (e) => {
+  if (e.state && e.state.q) {
+    searchInputSmall.value = e.state.q;
+    searchInput.value = e.state.q;
+    currentQuery = e.state.q;
+    currentPage = e.state.page || 1;
+    mainHome.classList.add('hidden');
+    resultsPage.classList.remove('hidden');
+    await fetchResults(e.state.q, currentPage);
+  } else {
+    resultsPage.classList.add('hidden');
+    mainHome.classList.remove('hidden');
+    searchInput.value = '';
+    searchInputSmall.value = '';
+  }
+});
 
 async function doSearchFromResults() {
   const q = searchInputSmall.value.trim();
@@ -185,14 +204,25 @@ async function doSearchFromResults() {
   searchInput.value = q;
   currentQuery = q;
   currentPage = 1;
+  searchInputSmall.value = q;
   window.scrollTo(0, 0);
+  history.pushState({q, page: 1}, '', `/?q=${encodeURIComponent(q)}`);
   await fetchResults(q, 1);
 }
 
 async function fetchResults(q, page, lucky = false) {
-  resultsList.innerHTML = `<div class="loading">
-    <span></span><span></span><span></span><span></span>
-  </div>`;
+  resultsList.innerHTML = `
+    <div class="skeleton-container">
+      ${Array(5).fill(`
+      <div class="skeleton-result">
+        <div class="skeleton-url skeleton-box"></div>
+        <div class="skeleton-title skeleton-box"></div>
+        <div class="skeleton-line skeleton-box"></div>
+        <div class="skeleton-line skeleton-box short"></div>
+      </div>
+      `).join('')}
+    </div>
+  `;
   resultsInfo.textContent = '';
   pagination.innerHTML = '';
 
@@ -272,7 +302,9 @@ function renderPagination(total, currentPg) {
 
 async function goPage(pg) {
   currentPage = pg;
+  currentPage = pg;
   window.scrollTo(0, 0);
+  history.pushState({q: currentQuery, page: pg}, '', `/?q=${encodeURIComponent(currentQuery)}&page=${pg}`);
   await fetchResults(currentQuery, pg);
 }
 
@@ -282,8 +314,10 @@ document.querySelectorAll('.small-logo, #logoTextSmall').forEach(el => {
     resultsPage.classList.add('hidden');
     mainHome.classList.remove('hidden');
     searchInput.value = '';
+    searchInput.value = '';
     searchInputSmall.value = '';
     window.scrollTo(0, 0);
+    history.pushState(null, '', '/');
   });
 });
 
