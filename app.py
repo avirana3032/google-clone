@@ -3,7 +3,6 @@ import time
 import random
 import requests
 from flask import Flask, render_template, request, jsonify
-from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from cachetools import cached, TTLCache
 
@@ -12,68 +11,126 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "google-clone-secret-2024")
 
-# ─── User-Agent Pool ───────────────────────────────────────────
-USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/119.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/118.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/120.0",
+# ─── SearXNG Public Instances (fallback chain) ────────────────
+SEARXNG_INSTANCES = [
+    "https://search.bus-hit.me",
+    "https://searx.tiekoetter.com",
+    "https://search.ononoki.org",
+    "https://searx.be",
+    "https://search.sapti.me",
+    "https://searx.work",
 ]
 
 def get_headers():
     return {
-        "User-Agent": random.choice(USER_AGENTS),
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Accept-Encoding": "gzip, deflate, br",
-        "DNT": "1",
-        "Connection": "keep-alive",
-        "Upgrade-Insecure-Requests": "1",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json, text/html",
     }
 
 
-from duckduckgo_search import DDGS
+def searxng_query(query, categories="general", page=1):
+    """Query SearXNG instances with automatic fallback."""
+    for instance in SEARXNG_INSTANCES:
+        try:
+            resp = requests.get(
+                f"{instance}/search",
+                params={
+                    "q": query,
+                    "format": "json",
+                    "categories": categories,
+                    "pageno": page,
+                    "language": "en",
+                    "safesearch": 0,
+                },
+                headers=get_headers(),
+                timeout=8,
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                if data.get("results"):
+                    return data
+        except Exception:
+            continue
+    return None
 
-# ─── duckduckgo-search wrappers ────────────────────────────────
+
+# ─── Cached search wrappers ───────────────────────────────────
 @cached(cache=TTLCache(maxsize=500, ttl=600))
-def search_ddgs_text(query: str, page: int = 1):
+def search_text(query: str, page: int = 1):
     start = time.time()
-    try:
-        results = DDGS().text(query, max_results=30)
-        formatted = [{"title": r.get("title", ""), "url": r.get("href", ""), "snippet": r.get("body", ""), "date": ""} for r in results]
-        return formatted, None, round(time.time() - start, 2)
-    except Exception as e:
-        return [], str(e), round(time.time() - start, 2)
+    data = searxng_query(query, "general", page)
+    elapsed = round(time.time() - start, 2)
+    if not data or not data.get("results"):
+        return [], "All search instances timed out", elapsed
+    results = []
+    for r in data["results"][:30]:
+        results.append({
+            "title": r.get("title", ""),
+            "url": r.get("url", ""),
+            "snippet": r.get("content", ""),
+            "date": "",
+        })
+    return results, None, elapsed
+
 
 @cached(cache=TTLCache(maxsize=500, ttl=600))
-def search_ddgs_images(query: str):
+def search_images(query: str):
     start = time.time()
-    try:
-        results = DDGS().images(query, max_results=30)
-        formatted = [{"title": r.get("title", ""), "url": r.get("url", ""), "image": r.get("image", ""), "thumbnail": r.get("thumbnail", ""), "source": r.get("source", "")} for r in results]
-        return formatted, None, round(time.time() - start, 2)
-    except Exception as e:
-        return [], str(e), round(time.time() - start, 2)
+    data = searxng_query(query, "images")
+    elapsed = round(time.time() - start, 2)
+    if not data or not data.get("results"):
+        return [], "No image results found", elapsed
+    results = []
+    for r in data["results"][:30]:
+        results.append({
+            "title": r.get("title", ""),
+            "url": r.get("url", ""),
+            "image": r.get("img_src", r.get("url", "")),
+            "thumbnail": r.get("thumbnail_src", r.get("img_src", "")),
+            "source": r.get("source", r.get("engine", "")),
+        })
+    return results, None, elapsed
+
 
 @cached(cache=TTLCache(maxsize=500, ttl=600))
-def search_ddgs_news(query: str):
+def search_news(query: str):
     start = time.time()
-    try:
-        results = DDGS().news(query, max_results=30)
-        formatted = [{"title": r.get("title", ""), "url": r.get("url", ""), "snippet": r.get("body", ""), "date": r.get("date", ""), "source": r.get("source", "")} for r in results]
-        return formatted, None, round(time.time() - start, 2)
-    except Exception as e:
-        return [], str(e), round(time.time() - start, 2)
+    data = searxng_query(query, "news")
+    elapsed = round(time.time() - start, 2)
+    if not data or not data.get("results"):
+        return [], "No news results found", elapsed
+    results = []
+    for r in data["results"][:30]:
+        results.append({
+            "title": r.get("title", ""),
+            "url": r.get("url", ""),
+            "snippet": r.get("content", ""),
+            "date": r.get("publishedDate", ""),
+            "source": r.get("source", r.get("engine", "")),
+        })
+    return results, None, elapsed
+
 
 @cached(cache=TTLCache(maxsize=500, ttl=600))
-def search_ddgs_videos(query: str):
+def search_videos(query: str):
     start = time.time()
-    try:
-        results = DDGS().videos(query, max_results=30)
-        formatted = [{"title": r.get("title", ""), "url": r.get("content", ""), "description": r.get("description", ""), "duration": r.get("duration", ""), "published": r.get("published", ""), "publisher": r.get("publisher", ""), "thumbnail": r.get("images", {}).get("large", "") if isinstance(r.get("images"), dict) else ""} for r in results]
-        return formatted, None, round(time.time() - start, 2)
-    except Exception as e:
-        return [], str(e), round(time.time() - start, 2)
+    data = searxng_query(query, "videos")
+    elapsed = round(time.time() - start, 2)
+    if not data or not data.get("results"):
+        return [], "No video results found", elapsed
+    results = []
+    for r in data["results"][:30]:
+        results.append({
+            "title": r.get("title", ""),
+            "url": r.get("url", ""),
+            "description": r.get("content", ""),
+            "duration": r.get("length", r.get("duration", "")),
+            "published": r.get("publishedDate", ""),
+            "publisher": r.get("source", r.get("engine", "")),
+            "thumbnail": r.get("thumbnail", r.get("img_src", "")),
+        })
+    return results, None, elapsed
+
 
 # ─── Routes ───────────────────────────────────────────────────
 @app.route("/")
@@ -89,7 +146,7 @@ def search():
     if not query:
         return jsonify({"error": "Please enter a search query", "results": [], "total": 0})
 
-    results, error, elapsed = search_ddgs_text(query, page)
+    results, error, elapsed = search_text(query, page)
 
     if error and not results:
         return jsonify({"error": f"Search failed: {error}", "results": [], "total": 0})
@@ -103,45 +160,44 @@ def search():
     })
 
 @app.route("/search/images")
-def images():
+def images_route():
     query = request.args.get("q", "").strip()
     if not query:
         return jsonify({"error": "No query", "results": []})
-    results, error, elapsed = search_ddgs_images(query)
+    results, error, elapsed = search_images(query)
     return jsonify({"results": results, "time": str(elapsed)})
 
 @app.route("/search/news")
-def news():
+def news_route():
     query = request.args.get("q", "").strip()
     if not query:
         return jsonify({"error": "No query", "results": []})
-    results, error, elapsed = search_ddgs_news(query)
+    results, error, elapsed = search_news(query)
     return jsonify({"results": results, "time": str(elapsed)})
 
 @app.route("/search/videos")
-def videos():
+def videos_route():
     query = request.args.get("q", "").strip()
     if not query:
         return jsonify({"error": "No query", "results": []})
-    results, error, elapsed = search_ddgs_videos(query)
+    results, error, elapsed = search_videos(query)
     return jsonify({"results": results, "time": str(elapsed)})
 
 @app.route("/suggest")
 def suggest():
-    """DuckDuckGo autocomplete suggestions."""
+    """Google-style autocomplete suggestions."""
     q = request.args.get("q", "").strip()
     if not q:
         return jsonify({"suggestions": []})
 
     try:
         resp = requests.get(
-            "https://duckduckgo.com/ac/",
-            params={"q": q, "type": "list"},
+            "https://suggestqueries.google.com/complete/search",
+            params={"client": "firefox", "q": q},
             headers=get_headers(),
-            timeout=5
+            timeout=3,
         )
         data = resp.json()
-        # Response: ["query", [suggestions...]]
         if isinstance(data, list) and len(data) > 1:
             return jsonify({"suggestions": data[1][:8]})
     except Exception:
