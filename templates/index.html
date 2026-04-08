@@ -17,9 +17,21 @@
     <div class="top-right">
       <button class="icon-btn" id="themeBtn" title="Change Theme">✏️</button>
       <button class="icon-btn" id="addSiteBtn" title="Add Favourite Site">＋</button>
-      <a href="#" class="gmail-link">Gmail</a>
-      <a href="#" class="gmail-link">Images</a>
-      <div class="avatar">A</div>
+      <a href="https://mail.google.com" target="_blank" class="gmail-link">Gmail</a>
+      <a href="#" id="imagesLink" class="gmail-link">Images</a>
+      <div class="avatar" id="avatarBtn">A</div>
+    </div>
+    
+    <!-- PROFILE DROPDOWN -->
+    <div class="profile-dropdown" id="profileDropdown">
+      <div class="profile-email">anthony@google.com</div>
+      <div class="avatar large">A</div>
+      <div class="profile-name">Hi, Anthony!</div>
+      <a href="https://myaccount.google.com" target="_blank" class="profile-link">Manage your Google Account</a>
+      <div class="profile-footer">
+        <a href="/">Add another account</a>
+        <a href="/">Sign out</a>
+      </div>
     </div>
   </div>
 
@@ -76,8 +88,8 @@
 
   <!-- MAIN CONTENT -->
   <main class="main-home" id="mainHome">
-    <img src="/static/google-logo.png" alt="Google" class="google-logo" onerror="this.style.display='none';document.getElementById('logoText').style.display='block'"/>
-    <div id="logoText" class="logo-text" style="display:none">
+    <img src="/static/google-logo.png" id="homeLogo" alt="Google" class="google-logo clickable" onerror="this.style.display='none';document.getElementById('logoText').style.display='block'"/>
+    <div id="logoText" class="logo-text clickable" style="display:none">
       <span style="color:#4285F4">G</span><span style="color:#EA4335">o</span><span style="color:#FBBC05">o</span><span style="color:#4285F4">g</span><span style="color:#34A853">l</span><span style="color:#EA4335">e</span>
     </div>
 
@@ -105,8 +117,8 @@
   <!-- RESULTS PAGE -->
   <div class="results-page hidden" id="resultsPage">
     <div class="results-header">
-      <img src="/static/google-logo.png" alt="Google" class="small-logo" onerror="this.style.display='none'"/>
-      <div id="logoTextSmall" class="logo-text-small">
+      <img src="/static/google-logo.png" id="resultsLogo" alt="Google" class="small-logo clickable" onerror="this.style.display='none';document.getElementById('logoTextSmall').style.display='block'"/>
+      <div id="logoTextSmall" class="logo-text-small clickable" style="display:none">
         <span style="color:#4285F4">G</span><span style="color:#EA4335">o</span><span style="color:#FBBC05">o</span><span style="color:#4285F4">g</span><span style="color:#34A853">l</span><span style="color:#EA4335">e</span>
       </div>
       <div class="search-box small" id="searchBoxSmall">
@@ -130,6 +142,24 @@
       <div class="pagination" id="pagination"></div>
     </div>
   </div>
+
+  <!-- STICKY FOOTER -->
+  <footer class="home-footer" id="homeFooter">
+    <div class="footer-top">India</div>
+    <div class="footer-bottom">
+      <div class="footer-links">
+        <a href="https://about.google" target="_blank">About</a>
+        <a href="https://ads.google.com" target="_blank">Advertising</a>
+        <a href="https://www.google.com/services" target="_blank">Business</a>
+        <a href="https://google.com/search/howsearchworks" target="_blank">How Search works</a>
+      </div>
+      <div class="footer-links">
+        <a href="https://policies.google.com/privacy" target="_blank">Privacy</a>
+        <a href="https://policies.google.com/terms" target="_blank">Terms</a>
+        <a href="#" id="footerSettings">Settings</a>
+      </div>
+    </div>
+  </footer>
 
   <script src="/static/app.js"></script>
 </body>

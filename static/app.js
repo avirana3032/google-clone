@@ -28,6 +28,60 @@ const lensSearchBtn = document.getElementById('lensSearchBtn');
 const savedTheme = localStorage.getItem('gc_theme') || 'theme-light';
 applyTheme(savedTheme);
 
+const profileDropdown = document.getElementById('profileDropdown');
+const avatarBtn = document.getElementById('avatarBtn');
+const homeFooter = document.getElementById('homeFooter');
+
+function resetToHome() {
+  currentQuery = '';
+  isLensSearch = false;
+  searchInput.value = '';
+  searchInputSmall.value = '';
+  mainHome.classList.remove('hidden');
+  resultsPage.classList.add('hidden');
+  if (homeFooter) homeFooter.classList.remove('hidden');
+  window.scrollTo(0, 0);
+  history.pushState(null, '', '/');
+}
+
+[document.getElementById('homeLogo'), document.getElementById('resultsLogo'), 
+ document.getElementById('logoText'), document.getElementById('logoTextSmall')].forEach(el => {
+  if (el) el.addEventListener('click', resetToHome);
+});
+
+if (document.getElementById('footerSettings')) {
+  document.getElementById('footerSettings').addEventListener('click', (e) => {
+    e.preventDefault();
+    openPanel(themePanel);
+  });
+}
+avatarBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  profileDropdown.classList.toggle('open');
+});
+
+document.getElementById('imagesLink').addEventListener('click', (e) => {
+  e.preventDefault();
+  currentTab = 'images';
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.remove('active');
+    if (t.textContent.includes('Images')) t.classList.add('active');
+  });
+  if (currentQuery) {
+    doSearch();
+  } else {
+    // Just switch view if no query
+    mainHome.classList.add('hidden');
+    resultsPage.classList.remove('hidden');
+    resultsList.innerHTML = '<div class="results-info">Search for images above</div>';
+  }
+});
+
+document.addEventListener('click', () => {
+  profileDropdown.classList.remove('open');
+});
+profileDropdown.addEventListener('click', (e) => e.stopPropagation());
+
 document.querySelectorAll('.theme-swatch').forEach(sw => {
   if (sw.dataset.theme === savedTheme) sw.classList.add('active');
   sw.addEventListener('click', () => {
@@ -199,6 +253,9 @@ async function doSearch(lucky = false) {
     history.pushState({q, page: 1}, '', `/?q=${encodeURIComponent(q)}`);
     await fetchResults(q, 1);
   }
+  
+  // Hide footer on results (optional, depends on look)
+  // if (homeFooter) homeFooter.classList.add('hidden');
 }
 
 window.addEventListener('popstate', async (e) => {
@@ -255,6 +312,11 @@ async function fetchResults(q, page, lucky = false) {
     const url = `${endpoint}?q=${encodeURIComponent(q)}&page=${page}`;
     const res = await fetch(url);
     const data = await res.json();
+
+    if (lucky && data.results && data.results.length > 0) {
+      window.location.href = data.results[0].url;
+      return;
+    }
 
     if (data.error) {
       resultsList.innerHTML = `<div class="error-msg">⚠️ ${data.error}</div>`;
@@ -474,8 +536,6 @@ function performLensSearch(query, source) {
   searchInputSmall.value = query;
   closeAllPanels();
   doSearch();
-}
-
 }
 
 // ====== VOICE SEARCH ======
