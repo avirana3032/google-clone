@@ -142,6 +142,34 @@ def search_bing(query: str, page: int = 1):
     elapsed = round(time.time() - start, 2)
     return results, None, elapsed
 
+# ─── Wikipedia Scrape (Ultimate Fallback) ──────────────────────
+@cached(cache=TTLCache(maxsize=500, ttl=600))
+def search_wikipedia(query: str, page: int = 1):
+    """Ultimate fallback using Wikipedia API (never blocks)."""
+    results = []
+    start = time.time()
+    url = f"https://en.wikipedia.org/w/api.php?action=opensearch&search={requests.utils.quote(query)}&limit=10&namespace=0&format=json"
+    
+    try:
+        resp = requests.get(url, headers={"User-Agent": "GoogleCloneApp/1.0"}, timeout=5)
+        resp.raise_for_status()
+        data = resp.json()
+        if len(data) == 4:
+            titles = data[1]
+            snippets = data[2]
+            urls = data[3]
+            for i in range(len(titles)):
+                results.append({
+                    "title": titles[i] + " - Wikipedia",
+                    "url": urls[i],
+                    "snippet": snippets[i] if snippets[i] else f"Information about {titles[i]} on Wikipedia.",
+                    "date": ""
+                })
+    except Exception as e:
+        return None, str(e), 0
+
+    elapsed = round(time.time() - start, 2)
+    return results, None, elapsed
 
 # ─── Routes ───────────────────────────────────────────────────
 @app.route("/")
@@ -162,6 +190,10 @@ def search():
     # Fallback to Bing if DuckDuckGo fails or returns nothing
     if not results:
         results, error, elapsed = search_bing(query, page)
+
+    # Ultimate Fallback to Wikipedia if Bing also fails
+    if not results:
+        results, error, elapsed = search_wikipedia(query, page)
 
     if error and not results:
         return jsonify({"error": f"Search failed: {error}", "results": [], "total": 0})
