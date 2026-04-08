@@ -49,6 +49,31 @@
   <!-- OVERLAY -->
   <div class="overlay" id="overlay"></div>
 
+  <!-- LENS MODAL -->
+  <div class="panel" id="lensPanel" style="min-width: 500px;">
+    <div class="lens-header">
+      <h3>Search any image with Google Lens</h3>
+      <button class="close-btn-round" id="closeLens">&times;</button>
+    </div>
+    <div class="lens-content">
+      <div class="lens-drop-zone" id="lensDropZone">
+        <div class="lens-drop-inner">
+          <img src="https://www.gstatic.com/images/branding/googlelogo/svg/googlelogo_clr_74x24dp.svg" width="74" height="24" style="margin-bottom: 12px; opacity: 0.6;">
+          <div class="lens-icon-big">📸</div>
+          <p>Drag an image here or <span class="upload-link">upload a file</span></p>
+          <input type="file" id="lensFileInput" style="display: none;" accept="image/*">
+        </div>
+      </div>
+      <div class="lens-divider">
+        <span>OR</span>
+      </div>
+      <div class="lens-url-input">
+        <input type="text" id="lensUrlInput" placeholder="Paste image link" class="panel-input"/>
+        <button class="save-btn" style="padding: 10px 24px;" id="lensSearchBtn">Search</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MAIN CONTENT -->
   <main class="main-home" id="mainHome">
     <img src="/static/google-logo.png" alt="Google" class="google-logo" onerror="this.style.display='none';document.getElementById('logoText').style.display='block'"/>

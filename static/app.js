@@ -18,6 +18,11 @@ const themePanel = document.getElementById('themePanel');
 const addSitePanel = document.getElementById('addSitePanel');
 const overlay = document.getElementById('overlay');
 const favouritesDiv = document.getElementById('favourites');
+const lensPanel = document.getElementById('lensPanel');
+const lensDropZone = document.getElementById('lensDropZone');
+const lensFileInput = document.getElementById('lensFileInput');
+const lensUrlInput = document.getElementById('lensUrlInput');
+const lensSearchBtn = document.getElementById('lensSearchBtn');
 
 // ====== THEME ======
 const savedTheme = localStorage.getItem('gc_theme') || 'theme-light';
@@ -109,10 +114,22 @@ function openPanel(panel) {
   overlay.classList.add('open');
 }
 function closeAllPanels() {
-  [themePanel, addSitePanel].forEach(p => p.classList.remove('open'));
+  [themePanel, addSitePanel, lensPanel].forEach(p => {
+    if (p) p.classList.remove('open');
+  });
   overlay.classList.remove('open');
 }
 overlay.addEventListener('click', closeAllPanels);
+if (document.getElementById('closeLens')) {
+  document.getElementById('closeLens').addEventListener('click', closeAllPanels);
+}
+// Open lens on camera icon click
+document.querySelectorAll('.lens-btn').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    openPanel(lensPanel);
+  });
+});
 
 // ====== SUGGESTIONS ======
 let suggTimeout = null;
@@ -163,6 +180,9 @@ function renderSuggestions(items, sugDiv, inputEl) {
 async function doSearch(lucky = false) {
   const q = searchInput.value.trim();
   if (!q) return;
+  
+  if (!isLensSearch) lensSource = ''; // Reset if not from lens
+  
   suggestions.classList.add('hidden');
   currentQuery = q;
   currentPage = 1;
@@ -201,6 +221,7 @@ window.addEventListener('popstate', async (e) => {
 async function doSearchFromResults() {
   const q = searchInputSmall.value.trim();
   if (!q) return;
+  isLensSearch = false; // Normal search resets lens mode
   searchInput.value = q;
   currentQuery = q;
   currentPage = 1;
@@ -224,6 +245,9 @@ async function fetchResults(q, page, lucky = false) {
     </div>
   `;
   resultsInfo.textContent = '';
+  if (isLensSearch) {
+    resultsInfo.innerHTML = `<div class="lens-indicator">📸 Visual search results for: <strong>${escapeHtml(q)}</strong> (${lensSource})</div>`;
+  }
   pagination.innerHTML = '';
 
   try {
@@ -385,6 +409,73 @@ function escapeHtml(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+// ====== LENS LOGIC ======
+if (lensDropZone) {
+  // Click to upload
+  lensDropZone.addEventListener('click', () => lensFileInput.click());
+
+  lensFileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) handleLensFile(file);
+  });
+
+  // Drag & Drop
+  lensDropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    lensDropZone.classList.add('dragover');
+  });
+  lensDropZone.addEventListener('dragleave', () => {
+    lensDropZone.classList.remove('dragover');
+  });
+  lensDropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    lensDropZone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) handleLensFile(file);
+  });
+}
+
+function handleLensFile(file) {
+  if (!file.type.startsWith('image/')) {
+    alert('Please upload an image file.');
+    return;
+  }
+  // Extract keywords from filename (e.g., "cool_dog_photo.jpg" -> "cool dog photo")
+  let name = file.name.split('.')[0];
+  name = name.replace(/[-_]/g, ' ');
+  performLensSearch(name, 'Uploaded Image');
+}
+
+if (lensSearchBtn) {
+  lensSearchBtn.addEventListener('click', () => {
+    const url = lensUrlInput.value.trim();
+    if (!url) return;
+    // Extract something from the URL if possible
+    let keyword = 'Image';
+    try {
+      const urlObj = new URL(url);
+      const pathParts = urlObj.pathname.split('/');
+      keyword = pathParts[pathParts.length - 1].split('.')[0] || 'Image';
+      keyword = keyword.replace(/[-_]/g, ' ');
+    } catch(e) {}
+    performLensSearch(keyword, 'Image Link');
+  });
+}
+
+let isLensSearch = false;
+let lensSource = '';
+
+function performLensSearch(query, source) {
+  isLensSearch = true;
+  lensSource = source;
+  searchInput.value = query;
+  searchInputSmall.value = query;
+  closeAllPanels();
+  doSearch();
+}
+
 }
 
 // ====== VOICE SEARCH ======

@@ -825,3 +825,115 @@ footer a:hover { text-decoration: underline; }
   font-family: 'Google Sans', Arial, sans-serif;
   min-height: 28px;
 }
+
+/* ========== LENS MODAL ========== */
+.lens-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+.close-btn-round {
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: var(--subtext);
+  line-height: 1;
+}
+.lens-drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  background: var(--hover-bg);
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.lens-drop-zone.dragover {
+  border-color: #4285f4;
+  background: rgba(66, 133, 244, 0.05);
+  transform: scale(1.02);
+}
+.lens-icon-big {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+.upload-link {
+  color: #1a73e8;
+  font-weight: 500;
+}
+.lens-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 20px 0;
+  color: var(--subtext);
+  font-size: 12px;
+  font-weight: 500;
+}
+.lens-divider::before, .lens-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--border);
+}
+.lens-divider span {
+  padding: 0 10px;
+}
+.lens-url-input {
+  display: flex;
+  gap: 12px;
+}
+
+/* ========== LENS SEARCHING INDICATOR ========== */
+.lens-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #f1f3f4;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 13px;
+  color: var(--subtext);
+  margin-bottom: 12px;
+}
+
+/* ========== IMMERSIVE ANIMATIONS ========== */
+.search-result {
+  animation: result-fade-in 0.5s ease-out backwards;
+}
+
+@keyframes result-fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Stagger results appearance */
+.search-result:nth-child(1) { animation-delay: 0.05s; }
+.search-result:nth-child(2) { animation-delay: 0.1s; }
+.search-result:nth-child(3) { animation-delay: 0.15s; }
+.search-result:nth-child(4) { animation-delay: 0.2s; }
+.search-result:nth-child(5) { animation-delay: 0.25s; }
+
+.main-home {
+  transition: opacity 0.3s ease-in-out;
+}
+
+.main-home.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Glassmorphism focus */
+.search-box:focus-within {
+  background: var(--input-bg);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1), 0 0 0 1px rgba(66, 133, 244, 0.4);
+}
+
+.image-card, .news-card, .video-card {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+}
+
+.image-card:hover, .video-card:hover {
+  transform: scale(1.03) translateY(-5px);
+}
