@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Google Clone</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+</head>
+<body class="theme-light" id="body">
+
+  <!-- TOP RIGHT BUTTONS -->
+  <div class="top-bar">
+    <div class="top-right">
+      <button class="icon-btn" id="themeBtn" title="Change Theme">✏️</button>
+      <button class="icon-btn" id="addSiteBtn" title="Add Favourite Site">＋</button>
+      <a href="#" class="gmail-link">Gmail</a>
+      <a href="#" class="gmail-link">Images</a>
+      <div class="avatar">A</div>
+    </div>
+  </div>
+
+  <!-- THEME PANEL -->
+  <div class="panel" id="themePanel">
+    <h3>🎨 Choose Theme</h3>
+    <div class="theme-options">
+      <div class="theme-swatch" data-theme="theme-light" style="background:#fff;border:2px solid #4285f4;">Light</div>
+      <div class="theme-swatch" data-theme="theme-dark" style="background:#202124;color:#e8eaed;border:2px solid #8ab4f8;">Dark</div>
+      <div class="theme-swatch" data-theme="theme-pink" style="background:#fce4ec;color:#880e4f;border:2px solid #e91e63;">Pink</div>
+      <div class="theme-swatch" data-theme="theme-ocean" style="background:#e3f2fd;color:#0d47a1;border:2px solid #2196f3;">Ocean</div>
+      <div class="theme-swatch" data-theme="theme-forest" style="background:#e8f5e9;color:#1b5e20;border:2px solid #4caf50;">Forest</div>
+      <div class="theme-swatch" data-theme="theme-night" style="background:#0a0e27;color:#a0c4ff;border:2px solid #7c83fd;">Night</div>
+    </div>
+    <button class="close-btn" id="closeTheme">Close</button>
+  </div>
+
+  <!-- ADD SITE PANEL -->
+  <div class="panel" id="addSitePanel">
+    <h3>⭐ Add Favourite Site</h3>
+    <input type="text" id="siteNameInput" placeholder="Site Name (e.g. YouTube)" class="panel-input"/>
+    <input type="url" id="siteUrlInput" placeholder="URL (e.g. https://youtube.com)" class="panel-input"/>
+    <button class="save-btn" id="saveSite">Add Site</button>
+    <button class="close-btn" id="closeAddSite">Cancel</button>
+  </div>
+
+  <!-- OVERLAY -->
+  <div class="overlay" id="overlay"></div>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-home" id="mainHome">
+    <img src="/static/google-logo.png" alt="Google" class="google-logo" onerror="this.style.display='none';document.getElementById('logoText').style.display='block'"/>
+    <div id="logoText" class="logo-text" style="display:none">
+      <span style="color:#4285F4">G</span><span style="color:#EA4335">o</span><span style="color:#FBBC05">o</span><span style="color:#4285F4">g</span><span style="color:#34A853">l</span><span style="color:#EA4335">e</span>
+    </div>
+
+    <div class="search-wrapper">
+      <div class="search-box" id="searchBox">
+        <i class="fa fa-search search-icon"></i>
+        <input type="text" id="searchInput" placeholder="Search Google or type a URL" autocomplete="off"/>
+        <button class="mic-btn" title="Voice Search"><i class="fa fa-microphone"></i></button>
+        <button class="lens-btn" title="Search by Image"><i class="fa fa-camera"></i></button>
+      </div>
+      <div id="suggestions" class="suggestions hidden"></div>
+    </div>
+
+    <div class="search-btns">
+      <button class="g-btn" onclick="doSearch()">Google Search</button>
+      <button class="g-btn" onclick="doSearch(true)">I'm Feeling Lucky</button>
+    </div>
+
+    <!-- FAVOURITE SITES -->
+    <div class="favourites" id="favourites">
+      <!-- Loaded from JS -->
+    </div>
+  </main>
+
+  <!-- RESULTS PAGE -->
+  <div class="results-page hidden" id="resultsPage">
+    <div class="results-header">
+      <img src="/static/google-logo.png" alt="Google" class="small-logo" onerror="this.style.display='none'"/>
+      <div id="logoTextSmall" class="logo-text-small">
+        <span style="color:#4285F4">G</span><span style="color:#EA4335">o</span><span style="color:#FBBC05">o</span><span style="color:#4285F4">g</span><span style="color:#34A853">l</span><span style="color:#EA4335">e</span>
+      </div>
+      <div class="search-box small" id="searchBoxSmall">
+        <i class="fa fa-search search-icon"></i>
+        <input type="text" id="searchInputSmall" placeholder="Search..."/>
+        <button class="mic-btn"><i class="fa fa-microphone"></i></button>
+      </div>
+      <button class="g-btn small-search-btn" onclick="doSearchFromResults()">Search</button>
+    </div>
+
+    <div class="results-tabs">
+      <span class="tab active">🔍 All</span>
+      <span class="tab">🖼️ Images</span>
+      <span class="tab">📰 News</span>
+      <span class="tab">🎬 Videos</span>
+    </div>
+
+    <div class="results-container">
+      <div class="results-info" id="resultsInfo"></div>
+      <div id="resultsList"></div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
