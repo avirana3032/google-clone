@@ -32,144 +32,48 @@ def get_headers():
     }
 
 
-# ─── DuckDuckGo HTML Search ────────────────────────────────────
+from duckduckgo_search import DDGS
+
+# ─── duckduckgo-search wrappers ────────────────────────────────
 @cached(cache=TTLCache(maxsize=500, ttl=600))
-def search_duckduckgo(query: str, page: int = 1):
-    """Scrape DuckDuckGo HTML results (no API key needed)."""
-    results = []
+def search_ddgs_text(query: str, page: int = 1):
     start = time.time()
-
-    # DuckDuckGo HTML (lite) endpoint
-    url = "https://html.duckduckgo.com/html/"
-    params = {"q": query}
-    if page > 1:
-        params["s"] = (page - 1) * 30      # DuckDuckGo uses 30 per page
-        params["dc"] = (page - 1) * 30
-        params["nextParams"] = ""
-        params["v"] = "l"
-        params["o"] = "json"
-        params["api"] = "/d.js"
-
     try:
-        resp = requests.post(
-            url,
-            data=params,
-            headers=get_headers(),
-            timeout=10
-        )
-        resp.raise_for_status()
-        soup = BeautifulSoup(resp.text, "html.parser")
-
-        # Parse results
-        for result in soup.select(".result__body"):
-            title_el = result.select_one(".result__a")
-            snippet_el = result.select_one(".result__snippet")
-            url_el = result.select_one(".result__url")
-
-            if not title_el:
-                continue
-
-            href = title_el.get("href", "")
-            # DuckDuckGo wraps links — extract real URL
-            real_url = _extract_ddg_url(href)
-
-            results.append({
-                "title": title_el.get_text(strip=True),
-                "url": real_url or href,
-                "snippet": snippet_el.get_text(strip=True) if snippet_el else "",
-                "date": "",
-            })
-
-    except requests.exceptions.RequestException as e:
-        return None, str(e), 0
-
-    elapsed = round(time.time() - start, 2)
-    # DuckDuckGo doesn't expose total count; estimate
-    estimated_total = max(len(results) * 10, 100) if results else 0
-    return results, None, elapsed
-
-
-def _extract_ddg_url(href: str) -> str:
-    """Extract real URL from DuckDuckGo redirect link."""
-    if not href:
-        return ""
-    if href.startswith("http") and "duckduckgo" not in href:
-        return href
-    # Parse uddg param
-    from urllib.parse import urlparse, parse_qs, unquote
-    try:
-        parsed = urlparse(href)
-        params = parse_qs(parsed.query)
-        if "uddg" in params:
-            return unquote(params["uddg"][0])
-        if parsed.path.startswith("//"):
-            return "https:" + parsed.path
-        if href.startswith("/"):
-            return "https://duckduckgo.com" + href
-    except Exception:
-        pass
-    return href
-
-
-# ─── Bing Scrape (fallback) ────────────────────────────────────
-@cached(cache=TTLCache(maxsize=500, ttl=600))
-def search_bing(query: str, page: int = 1):
-    """Fallback: scrape Bing HTML results."""
-    results = []
-    start = time.time()
-    first_result = (page - 1) * 10 + 1
-    url = f"https://www.bing.com/search?q={requests.utils.quote(query)}&first={first_result}"
-
-    try:
-        resp = requests.get(url, headers=get_headers(), timeout=10)
-        resp.raise_for_status()
-        soup = BeautifulSoup(resp.text, "html.parser")
-
-        for li in soup.select("li.b_algo"):
-            title_el = li.select_one("h2 a")
-            snippet_el = li.select_one(".b_caption p") or li.select_one(".b_algoSlug")
-            if not title_el:
-                continue
-            results.append({
-                "title": title_el.get_text(strip=True),
-                "url": title_el.get("href", ""),
-                "snippet": snippet_el.get_text(strip=True) if snippet_el else "",
-                "date": "",
-            })
+        results = DDGS().text(query, max_results=30)
+        formatted = [{"title": r.get("title", ""), "url": r.get("href", ""), "snippet": r.get("body", ""), "date": ""} for r in results]
+        return formatted, None, round(time.time() - start, 2)
     except Exception as e:
-        return None, str(e), 0
+        return [], str(e), round(time.time() - start, 2)
 
-    elapsed = round(time.time() - start, 2)
-    return results, None, elapsed
-
-# ─── Wikipedia Scrape (Ultimate Fallback) ──────────────────────
 @cached(cache=TTLCache(maxsize=500, ttl=600))
-def search_wikipedia(query: str, page: int = 1):
-    """Ultimate fallback using Wikipedia API (never blocks)."""
-    results = []
+def search_ddgs_images(query: str):
     start = time.time()
-    url = f"https://en.wikipedia.org/w/api.php?action=opensearch&search={requests.utils.quote(query)}&limit=10&namespace=0&format=json"
-    
     try:
-        resp = requests.get(url, headers={"User-Agent": "GoogleCloneApp/1.0"}, timeout=5)
-        resp.raise_for_status()
-        data = resp.json()
-        if len(data) == 4:
-            titles = data[1]
-            snippets = data[2]
-            urls = data[3]
-            for i in range(len(titles)):
-                results.append({
-                    "title": titles[i] + " - Wikipedia",
-                    "url": urls[i],
-                    "snippet": snippets[i] if snippets[i] else f"Information about {titles[i]} on Wikipedia.",
-                    "date": ""
-                })
+        results = DDGS().images(query, max_results=30)
+        formatted = [{"title": r.get("title", ""), "url": r.get("url", ""), "image": r.get("image", ""), "thumbnail": r.get("thumbnail", ""), "source": r.get("source", "")} for r in results]
+        return formatted, None, round(time.time() - start, 2)
     except Exception as e:
-        return None, str(e), 0
+        return [], str(e), round(time.time() - start, 2)
 
-    elapsed = round(time.time() - start, 2)
-    return results, None, elapsed
+@cached(cache=TTLCache(maxsize=500, ttl=600))
+def search_ddgs_news(query: str):
+    start = time.time()
+    try:
+        results = DDGS().news(query, max_results=30)
+        formatted = [{"title": r.get("title", ""), "url": r.get("url", ""), "snippet": r.get("body", ""), "date": r.get("date", ""), "source": r.get("source", "")} for r in results]
+        return formatted, None, round(time.time() - start, 2)
+    except Exception as e:
+        return [], str(e), round(time.time() - start, 2)
+
+@cached(cache=TTLCache(maxsize=500, ttl=600))
+def search_ddgs_videos(query: str):
+    start = time.time()
+    try:
+        results = DDGS().videos(query, max_results=30)
+        formatted = [{"title": r.get("title", ""), "url": r.get("content", ""), "description": r.get("description", ""), "duration": r.get("duration", ""), "published": r.get("published", ""), "publisher": r.get("publisher", ""), "thumbnail": r.get("images", {}).get("large", "") if isinstance(r.get("images"), dict) else ""} for r in results]
+        return formatted, None, round(time.time() - start, 2)
+    except Exception as e:
+        return [], str(e), round(time.time() - start, 2)
 
 # ─── Routes ───────────────────────────────────────────────────
 @app.route("/")
@@ -185,15 +89,7 @@ def search():
     if not query:
         return jsonify({"error": "Please enter a search query", "results": [], "total": 0})
 
-    results, error, elapsed = search_duckduckgo(query, page)
-
-    # Fallback to Bing if DuckDuckGo fails or returns nothing
-    if not results:
-        results, error, elapsed = search_bing(query, page)
-
-    # Ultimate Fallback to Wikipedia if Bing also fails
-    if not results:
-        results, error, elapsed = search_wikipedia(query, page)
+    results, error, elapsed = search_ddgs_text(query, page)
 
     if error and not results:
         return jsonify({"error": f"Search failed: {error}", "results": [], "total": 0})
@@ -206,6 +102,29 @@ def search():
         "page": page,
     })
 
+@app.route("/search/images")
+def images():
+    query = request.args.get("q", "").strip()
+    if not query:
+        return jsonify({"error": "No query", "results": []})
+    results, error, elapsed = search_ddgs_images(query)
+    return jsonify({"results": results, "time": str(elapsed)})
+
+@app.route("/search/news")
+def news():
+    query = request.args.get("q", "").strip()
+    if not query:
+        return jsonify({"error": "No query", "results": []})
+    results, error, elapsed = search_ddgs_news(query)
+    return jsonify({"results": results, "time": str(elapsed)})
+
+@app.route("/search/videos")
+def videos():
+    query = request.args.get("q", "").strip()
+    if not query:
+        return jsonify({"error": "No query", "results": []})
+    results, error, elapsed = search_ddgs_videos(query)
+    return jsonify({"results": results, "time": str(elapsed)})
 
 @app.route("/suggest")
 def suggest():

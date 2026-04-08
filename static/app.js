@@ -1,6 +1,6 @@
-// ====== STATE ======
 let currentPage = 1;
 let currentQuery = '';
+let currentTab = 'search'; // 'search', 'images', 'news', 'videos'
 let allResults = [];
 let pageSize = 10;
 
@@ -227,7 +227,8 @@ async function fetchResults(q, page, lucky = false) {
   pagination.innerHTML = '';
 
   try {
-    const url = `/search?q=${encodeURIComponent(q)}&page=${page}`;
+    const endpoint = currentTab === 'search' ? '/search' : `/search/${currentTab}`;
+    const url = `${endpoint}?q=${encodeURIComponent(q)}&page=${page}`;
     const res = await fetch(url);
     const data = await res.json();
 
@@ -260,28 +261,83 @@ function renderResults(results) {
     return;
   }
 
-  resultsList.innerHTML = results.map(r => {
-    const hostname = (() => { try { return new URL(r.url).hostname; } catch { return r.url; } })();
-    return `
-      <div class="result-card">
-        <div class="result-url">
-          <img class="result-favicon"
-            src="https://www.google.com/s2/favicons?domain=${hostname}&sz=32"
-            onerror="this.style.display='none'"
-          >
-          <span>${hostname}</span>
-          <span style="opacity:0.5">›</span>
-          <span style="opacity:0.7">${escapeHtml(r.url.replace(/^https?:\/\//, '').substring(0, 60))}</span>
-        </div>
-        <a class="result-title" href="${escapeHtml(r.url)}" target="_blank" rel="noopener">
-          ${escapeHtml(r.title || 'Untitled')}
+  if (currentTab === 'images') {
+    resultsList.innerHTML = `<div class="image-grid">
+      ${results.map(r => `
+        <a class="image-card" href="${escapeHtml(r.url)}" target="_blank" rel="noopener">
+          <img src="${escapeHtml(r.image || r.thumbnail)}" alt="Image result" loading="lazy" onerror="this.src='${escapeHtml(r.thumbnail)}'" />
+          <div class="image-title">${escapeHtml(r.title)}<br><small>${escapeHtml(r.source)}</small></div>
         </a>
-        ${r.date ? `<div class="result-date">${escapeHtml(r.date)}</div>` : ''}
+      `).join('')}
+    </div>`;
+  } else if (currentTab === 'news') {
+    resultsList.innerHTML = results.map(r => `
+      <div class="result-card news-card">
+        <div class="news-source">${escapeHtml(r.source)} <span class="news-date">• ${escapeHtml(r.date)}</span></div>
+        <a class="result-title" href="${escapeHtml(r.url)}" target="_blank" rel="noopener">${escapeHtml(r.title)}</a>
         <div class="result-snippet">${escapeHtml(r.snippet || '')}</div>
       </div>
-    `;
-  }).join('');
+    `).join('');
+  } else if (currentTab === 'videos') {
+    resultsList.innerHTML = `<div class="video-grid">
+      ${results.map(r => `
+        <a class="video-card" href="${escapeHtml(r.url)}" target="_blank" rel="noopener">
+          <div class="video-thumb-wrapper">
+            <img src="${escapeHtml(r.thumbnail)}" alt="Video" loading="lazy" />
+            <div class="video-play">▶</div>
+            <div class="video-duration">${escapeHtml(r.duration || '')}</div>
+          </div>
+          <div class="video-info">
+            <div class="result-title" style="font-size:14px; margin-bottom:4px">${escapeHtml(r.title)}</div>
+            <div class="video-meta">${escapeHtml(r.publisher)} • ${escapeHtml(r.published)}</div>
+          </div>
+        </a>
+      `).join('')}
+    </div>`;
+  } else {
+    // Default standard web results
+    resultsList.innerHTML = results.map(r => {
+      const hostname = (() => { try { return new URL(r.url).hostname; } catch { return r.url; } })();
+      return `
+        <div class="result-card">
+          <div class="result-url">
+            <img class="result-favicon"
+              src="https://www.google.com/s2/favicons?domain=${hostname}&sz=32"
+              onerror="this.style.display='none'"
+            >
+            <span>${hostname}</span>
+            <span style="opacity:0.5">›</span>
+            <span style="opacity:0.7">${escapeHtml(r.url.replace(/^https?:\/\//, '').substring(0, 60))}</span>
+          </div>
+          <a class="result-title" href="${escapeHtml(r.url)}" target="_blank" rel="noopener">
+            ${escapeHtml(r.title || 'Untitled')}
+          </a>
+          ${r.date ? `<div class="result-date">${escapeHtml(r.date)}</div>` : ''}
+          <div class="result-snippet">${escapeHtml(r.snippet || '')}</div>
+        </div>
+      `;
+    }).join('');
+  }
 }
+
+// ====== TABS EVENTS ======
+document.querySelectorAll('.results-tabs .tab').forEach(tab => {
+  tab.addEventListener('click', (e) => {
+    document.querySelectorAll('.results-tabs .tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    
+    const text = tab.textContent.toLowerCase();
+    if (text.includes('images')) currentTab = 'images';
+    else if (text.includes('news')) currentTab = 'news';
+    else if (text.includes('videos')) currentTab = 'videos';
+    else currentTab = 'search';
+    
+    if (currentQuery) {
+      currentPage = 1;
+      fetchResults(currentQuery, 1);
+    }
+  });
+});
 
 function renderPagination(total, currentPg) {
   const totalPages = Math.min(Math.ceil(total / pageSize), 10);
